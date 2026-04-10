@@ -6,7 +6,7 @@ Social Media Application - HKUgram
 
 | Name             | Student ID | GitHub Profile |
 | ---------------- | ---------- | -------------- |
-| Fatima-Tul-Zahra | X          | X              |
+| Fatima-Tul-Zahra | 3036217037 | https-fatima   |
 | Dengshuyu        | X          | X              |
 | Tang Yiping      | X          | X              |
 | Yu Tin Yau       | X          | X              |
