@@ -2,13 +2,13 @@ import { useState, useEffect } from 'react';
 import CreatePostForm from '../components/CreatePostForm';
 
 interface Post {
-  id: number;
+  post_id: number;      // Changed from id
   user_id: number;
   username: string;
-  text_content: string;
+  content: string;      // Changed from text_content
   image_url: string | null;
   like_count: number;
-  created_at: string;
+  post_date: string;    // Changed from created_at
 }
 
 export default function Feed() {
@@ -74,7 +74,7 @@ export default function Feed() {
           </div>
         ) : (
           posts.map((post) => (
-            <div key={post.id} style={styles.postCard}>
+            <div key={post.post_id} style={styles.postCard}>  {/* Changed from post.id */}
               <div style={styles.postHeader}>
                 <div style={styles.userInfo}>
                   <div style={styles.avatar}>
@@ -82,12 +82,12 @@ export default function Feed() {
                   </div>
                   <div>
                     <strong style={styles.username}>{post.username}</strong>
-                    <span style={styles.timestamp}>{formatDate(post.created_at)}</span>
+                    <span style={styles.timestamp}>{formatDate(post.post_date)}</span>  {/* Changed from post.created_at */}
                   </div>
                 </div>
               </div>
               
-              <p style={styles.postText}>{post.text_content}</p>
+              <p style={styles.postText}>{post.content}</p>  {/* Changed from post.text_content */}
               
               {post.image_url && (
                 <div style={styles.imageContainer}>
