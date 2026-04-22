@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.routes.auth_routes import auth_router
+from app.routes.posts_routes import posts_router
 
 app = FastAPI()
 
@@ -22,6 +23,7 @@ app.add_middleware(
 # http://localhost:8000
 
 app.include_router(auth_router, prefix="/auth")
+app.include_router(posts_router, prefix="/posts")
 
 @app.get("/")
 def read_root():

@@ -7,6 +7,9 @@ import {
 import React from "react";
 import Home from "./pages/Home";
 import Feed from "./pages/Feed";
+import Profile from "./pages/Profile";
+
+import ProtectedRoutes from "./components/ProtectedRoutes";
 
 const App: React.FC = () => {
   return (
@@ -15,7 +18,12 @@ const App: React.FC = () => {
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="/login" element={<Home />} />
         <Route path="/signup" element={<Home />} />
-        <Route path="/feed" element={<Feed />} /> 
+
+        {/* Protected Routes */}
+        <Route element={<ProtectedRoutes />}>
+          <Route path="/feed" element={<Feed />} />
+          <Route path="/profile" element={<Profile />} />
+        </Route>
       </Routes>
     </Router>
   );
