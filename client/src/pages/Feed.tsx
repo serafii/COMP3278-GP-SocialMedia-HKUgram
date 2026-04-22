@@ -1,8 +1,4 @@
 import React, { useState, useEffect } from "react";
-import { motion } from "framer-motion";
-import { Heart, Loader2 } from "lucide-react";
-import { Link } from "react-router-dom";
-import CreatePostForm from "../components/CreatePostForm";
 
 interface Post {
   post_id: number;
@@ -34,7 +30,18 @@ const Feed: React.FC = () => {
     }
   };
 
-  useEffect(() => { fetchPosts(); }, []);
+  useEffect(() => {
+    fetchPosts();
+  }, []);
+
+  // Fix 2: Define formatDate
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString(undefined, {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+  };
 
   return (
     <div className="min-h-screen w-full bg-dark-900 text-white font-sans overflow-y-auto">
@@ -53,15 +60,11 @@ const Feed: React.FC = () => {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        
-        {/* Full-width Create Post Section */}
-        <div className="w-full mb-10">
-          <h2 className="text-xl font-bold mb-4 text-gray-100 ml-1">Create a new moment!</h2>
-          <div className="bg-dark-800 rounded-2xl border border-dark-600 shadow-xl overflow-hidden">
-             <CreatePostForm onPostCreated={fetchPosts} />
-          </div>
-        </div>
+      <main>
+        <div className="mt-5">
+          <h3 className="mb-4 text-lg font-semibold text-zinc-800">
+            Recent Posts
+          </h3>
 
         <div className="h-px w-full bg-dark-600 mb-10"></div>
 
