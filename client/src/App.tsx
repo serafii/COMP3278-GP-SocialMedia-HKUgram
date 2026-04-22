@@ -6,7 +6,7 @@ import {
 } from "react-router-dom";
 import React from "react";
 import Home from "./pages/Home";
-import Feed from "./pages/Feed";  // ADD THIS IMPORT
+import Feed from "./pages/Feed";
 
 const App: React.FC = () => {
   return (
@@ -15,7 +15,7 @@ const App: React.FC = () => {
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="/login" element={<Home />} />
         <Route path="/signup" element={<Home />} />
-        <Route path="/feed" element={<Feed />} />  {/* ADD THIS ROUTE */}
+        <Route path="/feed" element={<Feed />} /> 
       </Routes>
     </Router>
   );
