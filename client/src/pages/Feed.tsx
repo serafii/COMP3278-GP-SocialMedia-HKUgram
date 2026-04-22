@@ -1,171 +1,260 @@
-import React, { useState } from "react";
-import { motion } from "framer-motion";
-import { Heart } from "lucide-react";
-import { Link } from "react-router-dom";
+import { useState, useEffect } from 'react';
+import CreatePostForm from '../components/CreatePostForm';
 
-// Mock data for the feed
-const MOCK_POSTS = [
-  {
-    id: 1,
-    username: "hk_explorer",
-    imageUrl: "https://images.unsplash.com/photo-1513622470522-26c308a208be?q=80&w=1000&auto=format&fit=crop",
-    caption: "Victoria Peak looking stunning tonight! 🌃 #HK",
-    likes: 124,
-    isLiked: false,
-  },
-  {
-    id: 2,
-    username: "foodie_dimsum",
-    imageUrl: "https://images.unsplash.com/photo-1496116218417-1a781b1c416c?q=80&w=1000&auto=format&fit=crop",
-    caption: "Best dumplings in Mong Kok. Period. 🥟🤤",
-    likes: 89,
-    isLiked: true,
-  },
-  {
-    id: 3,
-    username: "coder_denny",
-    imageUrl: "https://images.unsplash.com/photo-1555066931-4365d14bab8c?q=80&w=1000&auto=format&fit=crop",
-    caption: "Finally got the new HKGram feed working! 🚀💻",
-    likes: 42,
-    isLiked: false,
-  },
-  {
-    id: 4,
-    username: "nature_hikes",
-    imageUrl: "https://images.unsplash.com/photo-1551041777-ed277b8dd348?q=80&w=1000&auto=format&fit=crop",
-    caption: "Dragon's Back trail was exhausting but worth it.",
-    likes: 256,
-    isLiked: false,
-  },
-  {
-    id: 5,
-    username: "street_snaps",
-    imageUrl: "https://images.unsplash.com/photo-1521503862198-2ae9a997bbc9?q=80&w=1000&auto=format&fit=crop",
-    caption: "Neon lights and busy nights. 🚦",
-    likes: 112,
-    isLiked: true,
-  }
-];
+interface Post {
+  post_id: number;      // Changed from id
+  user_id: number;
+  username: string;
+  content: string;      // Changed from text_content
+  image_url: string | null;
+  like_count: number;
+  post_date: string;    // Changed from created_at
+}
 
-const Feed: React.FC = () => {
-  const [posts, setPosts] = useState(MOCK_POSTS);
-  
-  // Hardcoded for now, you will replace this with real auth state later
-  const currentUser = "Denny_HKU"; 
+export default function Feed() {
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  const toggleLike = (postId: number) => {
-    setPosts(posts.map(post => {
-      if (post.id === postId) {
-        return {
-          ...post,
-          isLiked: !post.isLiked,
-          likes: post.isLiked ? post.likes - 1 : post.likes + 1
-        };
+  const fetchPosts = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('http://localhost:8000/api/posts/');
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch posts');
       }
-      return post;
-    }));
+      
+      const data = await response.json();
+      setPosts(data);
+      setError('');
+    } catch (err: any) {
+      console.error('Error fetching posts:', err);
+      setError('Failed to load posts. Make sure the backend is running.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchPosts();
+  }, []);
+
+  const handlePostCreated = () => {
+    fetchPosts();
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleString();
   };
 
   return (
-    <div className="min-h-screen w-full bg-dark-900 text-white font-sans overflow-y-auto">
+    <div style={styles.container}>
+      <div style={styles.header}>
+        <h1 style={styles.title}>📱 HKgram</h1>
+        <p style={styles.subtitle}>Share your moments</p>
+      </div>
       
-      {/* Header Bar */}
-      <header className="sticky top-0 z-50 w-full bg-dark-900/80 backdrop-blur-lg border-b border-dark-600">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          
-          {/* Left Side: Logo & Name */}
-          <Link 
-            to="/" 
-            className="flex items-center gap-3 hover:opacity-80 transition-opacity cursor-pointer"
-          >
-            <img
-              src="/hkgram_favicon_single.png"
-              alt="HKGram Logo"
-              className="w-8 h-8"
-              draggable={false}
-            />
-            <span className="text-xl font-bold tracking-tight text-white hidden sm:block">
-              HKGram
-            </span>
-          </Link>
-
-          {/* Right Side Actions (Optional placeholders) */}
-          <div className="flex items-center gap-4 text-sm font-medium">
-            <button className="bg-brand-500 hover:bg-brand-600 px-4 py-2 rounded-xl transition-colors shadow-[0_0_15px_rgba(217,70,239,0.2)]">
-              New Post
-            </button>
+      <CreatePostForm onPostCreated={handlePostCreated} />
+      
+      <div style={styles.feed}>
+        <h3 style={styles.feedTitle}>Recent Posts</h3>
+        
+        {error && <div style={styles.error}>{error}</div>}
+        
+        {loading ? (
+          <div style={styles.loading}>
+            <div style={styles.spinner}></div>
+            <p>Loading posts...</p>
           </div>
-        </div>
-      </header>
-
-      {/* Main Feed Wall (Imgur Style Masonry) */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="columns-1 sm:columns-2 lg:columns-3 xl:columns-4 gap-6 space-y-6">
-          
-          {posts.map((post, index) => (
-            <motion.div
-              key={post.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: index * 0.1 }}
-              className="break-inside-avoid bg-dark-800 rounded-2xl overflow-hidden border border-dark-600 shadow-lg hover:border-dark-500 transition-colors"
-            >
-              {/* Post Header: Username */}
-              <div className="p-3 px-4 flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-linear-to-tr from-brand-500 to-accent-blue flex items-center justify-center text-sm font-bold text-white">
-                  {post.username.charAt(0).toUpperCase()}
+        ) : posts.length === 0 ? (
+          <div style={styles.emptyState}>
+            <p>✨ No posts yet. Be the first to create a post!</p>
+          </div>
+        ) : (
+          posts.map((post) => (
+            <div key={post.post_id} style={styles.postCard}>  {/* Changed from post.id */}
+              <div style={styles.postHeader}>
+                <div style={styles.userInfo}>
+                  <div style={styles.avatar}>
+                    {post.username.charAt(0).toUpperCase()}
+                  </div>
+                  <div>
+                    <strong style={styles.username}>{post.username}</strong>
+                    <span style={styles.timestamp}>{formatDate(post.post_date)}</span>  {/* Changed from post.created_at */}
+                  </div>
                 </div>
-                <span className="font-semibold text-sm text-gray-200">
-                  {post.username}
-                </span>
               </div>
-
-              {/* Post Image */}
-              <div className="w-full bg-dark-900">
-                <img
-                  src={post.imageUrl}
-                  alt={`Post by ${post.username}`}
-                  className="w-full h-auto object-cover"
-                  loading="lazy"
-                />
-              </div>
-
-              {/* Post Footer: Actions & Caption */}
-              <div className="p-4">
-                {/* Like Button */}
-                <div className="flex items-center gap-4 mb-3">
-                  <button 
-                    onClick={() => toggleLike(post.id)}
-                    className="group flex items-center gap-2 transition-colors"
-                  >
-                    <Heart 
-                      className={`w-6 h-6 transition-transform group-hover:scale-110 ${
-                        post.isLiked 
-                          ? "fill-red-500 text-red-500" 
-                          : "text-gray-400 group-hover:text-gray-300"
-                      }`} 
-                    />
-                    <span className={`text-sm font-medium ${post.isLiked ? "text-red-500" : "text-gray-400"}`}>
-                      {post.likes}
-                    </span>
-                  </button>
+              
+              <p style={styles.postText}>{post.content}</p>  {/* Changed from post.text_content */}
+              
+              {post.image_url && (
+                <div style={styles.imageContainer}>
+                  <img 
+                    src={post.image_url} 
+                    alt="Post content" 
+                    style={styles.postImage}
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).style.display = 'none';
+                    }}
+                  />
                 </div>
-
-                {/* Caption */}
-                <p className="text-sm text-gray-300 leading-relaxed">
-                  <span className="font-semibold text-gray-200 mr-2">
-                    {post.username}
-                  </span>
-                  {post.caption}
-                </p>
+              )}
+              
+              <div style={styles.postFooter}>
+                <button style={styles.likeButton}>
+                  ❤️ {post.like_count} likes
+                </button>
               </div>
-            </motion.div>
-          ))}
-          
-        </div>
-      </main>
+            </div>
+          ))
+        )}
+      </div>
     </div>
   );
+}
+
+const styles = {
+  container: {
+    maxWidth: '680px',
+    margin: '0 auto',
+    padding: '20px',
+    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    backgroundColor: '#fafafa',
+    minHeight: '100vh',
+  },
+  header: {
+    textAlign: 'center' as const,
+    marginBottom: '30px',
+    padding: '20px',
+    backgroundColor: 'white',
+    borderRadius: '12px',
+    boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+  },
+  title: {
+    margin: 0,
+    color: '#1877f2',
+    fontSize: '32px',
+  },
+  subtitle: {
+    margin: '5px 0 0',
+    color: '#666',
+    fontSize: '14px',
+  },
+  feed: {
+    marginTop: '20px',
+  },
+  feedTitle: {
+    marginBottom: '15px',
+    color: '#333',
+  },
+  postCard: {
+    backgroundColor: 'white',
+    borderRadius: '12px',
+    padding: '15px',
+    marginBottom: '15px',
+    boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+  },
+  postHeader: {
+    marginBottom: '12px',
+  },
+  userInfo: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
+  },
+  avatar: {
+    width: '40px',
+    height: '40px',
+    borderRadius: '50%',
+    backgroundColor: '#1877f2',
+    color: 'white',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontWeight: 'bold',
+    fontSize: '18px',
+  },
+  username: {
+    display: 'block',
+    fontSize: '14px',
+    color: '#333',
+  },
+  timestamp: {
+    display: 'block',
+    fontSize: '11px',
+    color: '#999',
+    marginTop: '2px',
+  },
+  postText: {
+    margin: '10px 0',
+    fontSize: '15px',
+    lineHeight: '1.4',
+    color: '#333',
+  },
+  imageContainer: {
+    marginTop: '10px',
+    borderRadius: '8px',
+    overflow: 'hidden',
+  },
+  postImage: {
+    width: '100%',
+    maxHeight: '400px',
+    objectFit: 'cover' as const,
+  },
+  postFooter: {
+    marginTop: '12px',
+    paddingTop: '10px',
+    borderTop: '1px solid #eee',
+  },
+  likeButton: {
+    background: 'none',
+    border: 'none',
+    color: '#666',
+    fontSize: '14px',
+    cursor: 'pointer',
+    padding: '5px 10px',
+    borderRadius: '4px',
+    transition: 'background-color 0.2s',
+  },
+  loading: {
+    textAlign: 'center' as const,
+    padding: '40px',
+    color: '#666',
+  },
+  spinner: {
+    border: '3px solid #f3f3f3',
+    borderTop: '3px solid #1877f2',
+    borderRadius: '50%',
+    width: '40px',
+    height: '40px',
+    animation: 'spin 1s linear infinite',
+    margin: '0 auto 10px',
+  },
+  emptyState: {
+    textAlign: 'center' as const,
+    padding: '40px',
+    backgroundColor: 'white',
+    borderRadius: '12px',
+    color: '#666',
+  },
+  error: {
+    backgroundColor: '#ffebee',
+    color: '#d32f2f',
+    padding: '10px',
+    borderRadius: '8px',
+    marginBottom: '15px',
+    textAlign: 'center' as const,
+  },
 };
 
-export default Feed;
+// Add spinner animation
+const styleSheet = document.createElement("style");
+styleSheet.textContent = `
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+`;
+document.head.appendChild(styleSheet);
