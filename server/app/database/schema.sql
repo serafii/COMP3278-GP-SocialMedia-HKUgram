@@ -31,16 +31,16 @@ CREATE TABLE Likes (
     FOREIGN KEY (user_id) REFERENCES Users(user_id) ON DELETE CASCADE
 );
 
--- -- Table 4: Comments
--- CREATE TABLE Comments (
---     comment_id INT PRIMARY KEY AUTO_INCREMENT,
---     post_id INT NOT NULL,
---     user_id INT NOT NULL,
---     content TEXT NOT NULL,
---     comment_date DATETIME DEFAULT CURRENT_TIMESTAMP,
---     FOREIGN KEY (post_id) REFERENCES Posts(post_id) ON DELETE CASCADE,
---     FOREIGN KEY (user_id) REFERENCES Users(user_id) ON DELETE CASCADE
--- );
+-- Table 4: Comments
+CREATE TABLE Comments (
+    comment_id INT PRIMARY KEY AUTO_INCREMENT,
+    post_id INT NOT NULL,
+    user_id INT NOT NULL,
+    content TEXT NOT NULL,
+    comment_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (post_id) REFERENCES Posts(post_id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES Users(user_id) ON DELETE CASCADE
+);
 
 -- -- Table 5: Follows
 -- CREATE TABLE Follows (
