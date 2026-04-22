@@ -1,0 +1,15 @@
+# docker compose --env-file ./server/.env up -d
+services:
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin:latest
+    container_name: phpmyadmin
+    env_file:
+      - ./server/.env
+    ports:
+      - "8080:80" # http://localhost:8080
+    environment:
+      PMA_HOST: ${DB_HOST}
+      PMA_PORT: ${DB_PORT}
+      PMA_USER: ${DB_USER}
+      PMA_PASSWORD: ${DB_PASSWORD}
+    restart: unless-stopped
