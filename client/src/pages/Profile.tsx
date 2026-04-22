@@ -3,14 +3,8 @@ import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { motion } from "framer-motion";
 import CreatePostForm from "../components/CreatePostForm";
-import {
-  Home,
-  LogOut,
-  UserCircle2,
-  Mail,
-  CalendarDays,
-  PenLine,
-} from "lucide-react";
+import { UserCircle2, Mail, CalendarDays, PenLine } from "lucide-react";
+import AppNavbar from "../components/AppNavbar.tsx";
 
 interface ProfileUser {
   user_id: number;
@@ -114,47 +108,11 @@ const Profile: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-dark-900 text-white">
-      <div className="relative overflow-hidden border-b border-white/5 bg-dark-800/80 backdrop-blur-xl">
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute -left-20 top-0 h-64 w-64 rounded-full bg-brand-500/15 blur-3xl" />
-          <div className="absolute right-0 top-10 h-56 w-56 rounded-full bg-accent-blue/10 blur-3xl" />
-        </div>
-
-        <nav className="relative mx-auto flex max-w-5xl items-center justify-between px-5 py-4">
-          <Link to="/feed" className="flex items-center gap-3">
-            <img
-              src="/hkgram_favicon_single.png"
-              alt="HKGram Logo"
-              className="h-10 w-10"
-              draggable={false}
-            />
-            <div>
-              <p className="text-sm font-semibold uppercase tracking-[0.2em] text-brand-300">
-                HKGram
-              </p>
-              <p className="text-xs text-gray-400">Profile</p>
-            </div>
-          </Link>
-
-          <div className="flex items-center gap-2">
-            <Link
-              to="/feed"
-              className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-gray-200 transition hover:border-brand-400/40 hover:bg-brand-500/10 hover:text-white"
-            >
-              <Home className="h-4 w-4" />
-              Feed
-            </Link>
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="inline-flex hover:cursor-pointer items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-gray-200 transition hover:border-red-400/40 hover:bg-red-500/10 hover:text-white"
-            >
-              <LogOut className="h-4 w-4" />
-              Logout
-            </button>
-          </div>
-        </nav>
-      </div>
+      <AppNavbar
+        activePage="profile"
+        subtitle="Profile"
+        onLogout={handleLogout}
+      />
 
       <main className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-5 py-8">
         {loading ? (
