@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { Heart, Image as ImageIcon } from "lucide-react";
 import AppNavbar from "../components/AppNavbar.tsx";
+import axios from "axios";
 
 interface Post {
   post_id: number;
@@ -9,6 +11,7 @@ interface Post {
   content: string;
   image_url: string | null;
   like_count: number;
+  liked: boolean;
   post_date: string;
 }
 
@@ -17,17 +20,25 @@ const Feed: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [visibleCount, setVisibleCount] = useState(6);
+  const [likingPosts, setLikingPosts] = useState<Record<number, boolean>>({});
 
   const fetchPosts = async () => {
     try {
       setLoading(true);
-      const response = await fetch("http://localhost:8000/posts/");
+      const token = localStorage.getItem("access_token");
+      const authedResponse = await fetch("http://localhost:8000/posts/", {
+        headers: token
+          ? {
+              Authorization: `Bearer ${token}`,
+            }
+          : undefined,
+      });
 
-      if (!response.ok) {
+      if (!authedResponse.ok) {
         throw new Error("Failed to fetch posts");
       }
 
-      const data = await response.json();
+      const data = await authedResponse.json();
       setPosts(data);
       setError("");
     } catch (err: any) {
@@ -41,6 +52,85 @@ const Feed: React.FC = () => {
   useEffect(() => {
     fetchPosts();
   }, []);
+
+  const handleLikePost = async (postId: number) => {
+    if (likingPosts[postId]) {
+      return;
+    }
+
+    const previousPost = posts.find((post) => post.post_id === postId);
+    if (!previousPost) {
+      return;
+    }
+
+    const optimisticLiked = !previousPost.liked;
+    const optimisticLikeCount = optimisticLiked
+      ? previousPost.like_count + 1
+      : Math.max(previousPost.like_count - 1, 0);
+
+    setPosts((currentPosts) =>
+      currentPosts.map((post) =>
+        post.post_id === postId
+          ? {
+              ...post,
+              liked: optimisticLiked,
+              like_count: optimisticLikeCount,
+            }
+          : post,
+      ),
+    );
+    setLikingPosts((current) => ({ ...current, [postId]: true }));
+
+    try {
+      const token = localStorage.getItem("access_token");
+      if (!token) {
+        throw new Error("Please log in again to like posts.");
+      }
+
+      const response = await axios.post(
+        `http://localhost:8000/posts/like/${postId}`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+      if (response.data.success) {
+        setPosts((currentPosts) =>
+          currentPosts.map((post) =>
+            post.post_id === postId
+              ? {
+                  ...post,
+                  like_count: response.data.like_count,
+                  liked: response.data.liked,
+                }
+              : post,
+          ),
+        );
+      } else {
+        alert("Failed to like post: " + response.data.message);
+        setPosts((currentPosts) =>
+          currentPosts.map((post) =>
+            post.post_id === postId ? previousPost : post,
+          ),
+        );
+      }
+    } catch (error) {
+      console.error("Error liking post:", error);
+      setPosts((currentPosts) =>
+        currentPosts.map((post) =>
+          post.post_id === postId ? previousPost : post,
+        ),
+      );
+    } finally {
+      setLikingPosts((current) => {
+        const nextState = { ...current };
+        delete nextState[postId];
+        return nextState;
+      });
+    }
+  };
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString(undefined, {
@@ -68,6 +158,15 @@ const Feed: React.FC = () => {
             <div className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-gray-300">
               Showing {Math.min(visibleCount, posts.length)} of {posts.length}
             </div>
+          </div>
+
+          <div className="mt-4 flex flex-wrap gap-3">
+            <Link
+              to="/profile#create-post"
+              className="rounded-full bg-brand-500 px-5 py-2.5 text-sm font-semibold text-white shadow-[0_0_18px_rgba(217,70,239,0.25)] transition hover:bg-brand-600"
+            >
+              Create a post
+            </Link>
           </div>
         </section>
 
@@ -118,7 +217,8 @@ const Feed: React.FC = () => {
                     </div>
 
                     <span className="rounded-full border border-brand-400/30 bg-brand-500/10 px-3 py-1 text-xs font-medium text-brand-200">
-                      {post.like_count} likes
+                      {post.like_count}{" "}
+                      {post.like_count === 1 ? "Like" : "Likes"}
                     </span>
                   </div>
 
@@ -142,10 +242,22 @@ const Feed: React.FC = () => {
                   <div className="mt-4 flex items-center justify-between border-t border-white/8 pt-4">
                     <button
                       type="button"
-                      className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-gray-200 transition hover:border-brand-400/40 hover:bg-brand-500/10 hover:text-white"
+                      onClick={() => handleLikePost(post.post_id)}
+                      disabled={Boolean(likingPosts[post.post_id])}
+                      className={`inline-flex hover:cursor-pointer items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition ${
+                        post.liked
+                          ? "border-brand-400/30 bg-brand-500/10 text-white hover:border-brand-300 hover:bg-brand-500/20"
+                          : "border-white/10 bg-white/5 text-gray-200 hover:border-brand-400/40 hover:bg-brand-500/10 hover:text-white"
+                      } ${likingPosts[post.post_id] ? "opacity-50 cursor-not-allowed" : ""}`}
                     >
-                      <Heart className="h-4 w-4" />
-                      Like
+                      <Heart
+                        className={`h-4 w-4 ${post.liked ? "fill-current" : ""}`}
+                      />
+                      {likingPosts[post.post_id]
+                        ? "Updating..."
+                        : post.liked
+                          ? "Liked"
+                          : "Like"}
                     </button>
                   </div>
                 </article>
