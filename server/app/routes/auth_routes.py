@@ -102,3 +102,20 @@ async def verify_session(token: str = Depends(oauth2_scheme)):
         return {"success": True, "username": username}
     except JWTError:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token")
+
+
+@auth_router.get("/me")
+async def get_current_user(token: str = Depends(oauth2_scheme)):
+    try:
+        username = verify_token(token)
+        user = fetch_one(
+            "SELECT user_id, username, email, bio, joined_date FROM Users WHERE username = %s",
+            (username,)
+        )
+
+        if not user:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+        return {"success": True, "user": user}
+    except JWTError:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token")

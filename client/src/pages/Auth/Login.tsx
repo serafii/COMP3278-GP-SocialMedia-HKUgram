@@ -26,7 +26,7 @@ const Login: React.FC = () => {
       if (response.data.success) {
         localStorage.setItem("access_token", response.data.access_token!);
         alert("Login successful!");
-        navigate("/feed");
+        navigate("/profile");
       } else {
         alert("Login failed: " + response.data.message);
       }

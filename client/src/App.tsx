@@ -7,6 +7,7 @@ import {
 import React from "react";
 import Home from "./pages/Home";
 import Feed from "./pages/Feed";
+import Profile from "./pages/Profile";
 
 import ProtectedRoutes from "./components/ProtectedRoutes";
 
@@ -21,6 +22,7 @@ const App: React.FC = () => {
         {/* Protected Routes */}
         <Route element={<ProtectedRoutes />}>
           <Route path="/feed" element={<Feed />} />
+          <Route path="/profile" element={<Profile />} />
         </Route>
       </Routes>
     </Router>
