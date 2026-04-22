@@ -3,6 +3,8 @@ import { motion } from "framer-motion";
 import media from "../assets/media.png";
 import Login from "./Auth/Login";
 import CreateAccount from "./Auth/CreateAccount";
+import ForgotPassword from "./Auth/ForgotPassword";
+import ResetPassword from "./Auth/ResetPassword";
 import { useLocation } from "react-router-dom";
 
 const Home: React.FC = () => {
@@ -110,7 +112,15 @@ const Home: React.FC = () => {
       {/* Right side */}
       <div className="w-full lg:w-120 xl:w-135 flex flex-col items-center justify-center p-6 sm:p-8 lg:p-16 relative z-10 bg-dark-800">
         <div className="w-full lg:w-120 xl:w-135 flex flex-col items-center justify-center p-6 sm:p-8 lg:p-16 relative z-10 bg-dark-800">
-          {location.pathname === "/login" ? <Login /> : <CreateAccount />}
+          {location.pathname === "/login" ? (
+            <Login />
+          ) : location.pathname === "/forgot-password" ? (
+            <ForgotPassword />
+          ) : location.pathname === "/reset-password" ? (
+            <ResetPassword />
+          ) : (
+            <CreateAccount />
+          )}
         </div>
       </div>
     </div>

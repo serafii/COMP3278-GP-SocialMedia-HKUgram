@@ -3,10 +3,20 @@ from app.database.db import fetch_one, execute_query
 from app.auth.authentication import create_access_token, verify_token
 from pydantic import BaseModel, EmailStr
 from fastapi import Depends
-from jose import JWTError
+from jose import JWTError, jwt
 from fastapi.security import OAuth2PasswordBearer
 
 from bcrypt import checkpw, hashpw, gensalt
+
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+import smtplib
+from datetime import datetime, timedelta
+
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 auth_router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
@@ -19,6 +29,10 @@ class RegisterRequest(BaseModel):
 class LoginRequest(BaseModel):  
     email: str # Email or username 
     password: str
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    new_password: str
 
 @auth_router.post("/login")
 async def login(login_data: LoginRequest):  
@@ -119,3 +133,99 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
         return {"success": True, "user": user}
     except JWTError:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token")
+
+
+@auth_router.post("/forgot-password")   
+async def forgot_password(request_data: dict): 
+    email = request_data.get("email")
+    
+    try:
+        user = fetch_one("SELECT user_id FROM Users WHERE email = %s", (email,))
+        
+        if not user:
+            return {"success": True, "message": "If an account exists, a reset link has been sent."}
+        
+        SECRET_KEY = os.getenv("SECRET_KEY")
+        ALGORITHM = "HS256"
+        
+        # Create reset token (expires in 1 hour)
+        reset_token = jwt.encode(
+            {"user_id": user["user_id"], "exp": datetime.utcnow() + timedelta(hours=1)},
+            SECRET_KEY,
+            algorithm=ALGORITHM
+        )
+        
+        # Send email using Gmail SMTP
+        sender_email = os.getenv("EMAIL_USER")
+        app_password = os.getenv("GMAIL_APP_PASSWORD")
+        
+        if not sender_email or not app_password:
+            print("Email credentials not configured")
+            return {"success": True, "message": "Reset link sent if account exists."}
+        
+        reset_link = f"http://localhost:5173/reset-password?token={reset_token}"
+        
+        msg = MIMEMultipart()
+        msg["From"] = f"HKGram <{sender_email}>"
+        msg["To"] = email
+        msg["Subject"] = "Reset Your HKGram Password"
+        
+        body = f"""
+        Hello,
+        
+        You requested to reset your password for your HKGram account.
+        
+        Click the link below to reset your password (valid for 1 hour):
+        {reset_link}
+        
+        If you didn't request this, please ignore this email.
+        
+        - HKGram Team
+        """
+        
+        msg.attach(MIMEText(body, "plain"))
+        
+        # Send email
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+            server.login(sender_email, app_password)
+            server.send_message(msg)
+        
+        print(f"Reset email sent to: {email}")
+        return {"success": True, "message": "If an account exists, a reset link has been sent."}
+        
+    except Exception as e:
+        print(f"Forgot password error: {e}")
+
+        return {"success": True, "message": "If an account exists, a reset link has been sent."}
+    
+@auth_router.post("/reset-password")
+async def reset_password(reset_data: ResetPasswordRequest):
+    try:
+        SECRET_KEY = os.getenv("SECRET_KEY")
+        ALGORITHM = "HS256"
+        
+        # Verify token
+        payload = jwt.decode(reset_data.token, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id = payload.get("user_id")
+        
+        if not user_id:
+            raise HTTPException(status_code=400, detail="Invalid token")
+        
+        # Hash new password
+        hashed_password = hashpw(reset_data.new_password.encode('utf-8'), gensalt()).decode('utf-8')
+        
+        # Update user password
+        execute_query(
+            "UPDATE Users SET password_hash = %s WHERE user_id = %s",
+            (hashed_password, user_id)
+        )
+        
+        return {"success": True, "message": "Password reset successfully"}
+        
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=400, detail="Reset link has expired. Please request a new one.")
+    except jwt.JWTError:
+        raise HTTPException(status_code=400, detail="Invalid reset link.")
+    except Exception as e:
+        print(f"Reset password error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
