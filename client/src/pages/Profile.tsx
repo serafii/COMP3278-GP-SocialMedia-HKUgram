@@ -42,6 +42,10 @@ const Profile: React.FC = () => {
   const [bioDraft, setBioDraft] = useState("");
   const [savingBio, setSavingBio] = useState(false);
   const [bioMessage, setBioMessage] = useState("");
+  const [showDeletePanel, setShowDeletePanel] = useState(false);
+  const [deleteConfirmation, setDeleteConfirmation] = useState("");
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -158,6 +162,51 @@ const Profile: React.FC = () => {
   const handleLogout = () => {
     localStorage.removeItem("access_token");
     navigate("/login");
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!user) {
+      return;
+    }
+
+    if (deleteConfirmation.trim() !== user.username) {
+      setDeleteError("Please type your exact username to confirm deletion.");
+      return;
+    }
+
+    const token = localStorage.getItem("access_token");
+    if (!token) {
+      navigate("/login");
+      return;
+    }
+
+    setIsDeletingAccount(true);
+    setDeleteError("");
+
+    try {
+      const response = await axios.delete(
+        "http://localhost:8000/auth/account",
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+
+      if (!response.data?.success) {
+        throw new Error(response.data?.message || "Failed to delete account.");
+      }
+
+      localStorage.removeItem("access_token");
+      navigate("/login");
+    } catch (deleteAccountError: any) {
+      const serverMessage =
+        deleteAccountError?.response?.data?.detail ||
+        deleteAccountError?.response?.data?.message;
+      setDeleteError(serverMessage || "Failed to delete account.");
+    } finally {
+      setIsDeletingAccount(false);
+    }
   };
 
   return (
@@ -321,6 +370,62 @@ const Profile: React.FC = () => {
                     <p className="mt-1 text-3xl font-bold text-white">
                       {posts.length}
                     </p>
+                  </div>
+
+                  <div className="rounded-2xl border border-red-500/10 bg-red-500/5 p-4">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowDeletePanel((current) => !current);
+                        setDeleteError("");
+                      }}
+                      className="text-xs hover:cursor-pointer text-red-200/80 underline-offset-2 transition hover:text-red-100 hover:underline"
+                    >
+                      {showDeletePanel
+                        ? "Hide account deletion"
+                        : "Need to delete your account?"}
+                    </button>
+
+                    {showDeletePanel ? (
+                      <div className="mt-3 space-y-3 rounded-xl border border-red-500/20 bg-dark-900/70 p-3">
+                        <p className="text-xs leading-5 text-red-100/90">
+                          This action is permanent. Type your username
+                          <span className="mx-1 font-semibold text-white">
+                            {user.username}
+                          </span>
+                          to confirm.
+                        </p>
+
+                        <input
+                          type="text"
+                          value={deleteConfirmation}
+                          onChange={(e) =>
+                            setDeleteConfirmation(e.target.value)
+                          }
+                          placeholder="Type username to confirm"
+                          className="w-full rounded-lg border border-red-500/20 bg-dark-900 px-3 py-2 text-sm text-white placeholder:text-gray-600 focus:border-red-400/50 focus:outline-none"
+                        />
+
+                        <button
+                          type="button"
+                          onClick={handleDeleteAccount}
+                          disabled={isDeletingAccount}
+                          className={`rounded-lg px-3 py-2 text-sm hover:cursor-pointer font-medium transition ${
+                            isDeletingAccount
+                              ? "cursor-not-allowed bg-dark-600 text-gray-400"
+                              : "bg-red-600 text-white hover:bg-red-500"
+                          }`}
+                        >
+                          {isDeletingAccount
+                            ? "Deleting account..."
+                            : "Delete my account"}
+                        </button>
+
+                        {deleteError ? (
+                          <p className="text-xs text-red-200">{deleteError}</p>
+                        ) : null}
+                      </div>
+                    ) : null}
                   </div>
                 </div>
               </motion.div>

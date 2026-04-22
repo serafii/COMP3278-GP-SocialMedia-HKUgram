@@ -37,6 +37,48 @@ class ResetPasswordRequest(BaseModel):
 class UpdateBioRequest(BaseModel):
     bio: str
 
+
+@auth_router.delete("/account")
+async def delete_account(token: str = Depends(oauth2_scheme)):
+    try:
+        username = verify_token(token)
+        user = fetch_one(
+            "SELECT user_id FROM Users WHERE username = %s",
+            (username,)
+        )
+
+        if not user:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+        user_id = user["user_id"]
+
+        # Remove interactions made by this user.
+        execute_query("DELETE FROM Likes WHERE user_id = %s", (user_id,))
+        execute_query("DELETE FROM Comments WHERE user_id = %s", (user_id,))
+
+        # Remove interactions on this user's posts, then remove the posts.
+        execute_query(
+            "DELETE FROM Likes WHERE post_id IN (SELECT post_id FROM Posts WHERE user_id = %s)",
+            (user_id,),
+        )
+        execute_query(
+            "DELETE FROM Comments WHERE post_id IN (SELECT post_id FROM Posts WHERE user_id = %s)",
+            (user_id,),
+        )
+        execute_query("DELETE FROM Posts WHERE user_id = %s", (user_id,))
+
+        # Finally remove the user row.
+        execute_query("DELETE FROM Users WHERE user_id = %s", (user["user_id"],))
+
+        return {"success": True, "message": "Account deleted successfully"}
+    except JWTError:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token")
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Delete account error: {e}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
 @auth_router.post("/login")
 async def login(login_data: LoginRequest):  
     try:
