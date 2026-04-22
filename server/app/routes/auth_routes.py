@@ -34,6 +34,9 @@ class ResetPasswordRequest(BaseModel):
     token: str
     new_password: str
 
+class UpdateBioRequest(BaseModel):
+    bio: str
+
 @auth_router.post("/login")
 async def login(login_data: LoginRequest):  
     try:
@@ -133,6 +136,40 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
         return {"success": True, "user": user}
     except JWTError:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token")
+
+
+@auth_router.put("/bio")
+async def update_bio(payload: UpdateBioRequest, token: str = Depends(oauth2_scheme)):
+    try:
+        username = verify_token(token)
+        user = fetch_one(
+            "SELECT user_id FROM Users WHERE username = %s",
+            (username,)
+        )
+
+        if not user:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+        bio_text = payload.bio.strip()
+
+        execute_query(
+            "UPDATE Users SET bio = %s WHERE user_id = %s",
+            (bio_text, user["user_id"])
+        )
+
+        updated_user = fetch_one(
+            "SELECT user_id, username, email, bio, joined_date FROM Users WHERE user_id = %s",
+            (user["user_id"],)
+        )
+
+        return {"success": True, "message": "Bio updated successfully", "user": updated_user}
+    except JWTError:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token")
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Update bio error: {e}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 
 @auth_router.post("/forgot-password")   

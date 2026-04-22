@@ -3,7 +3,15 @@ import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { motion } from "framer-motion";
 import CreatePostForm from "../components/CreatePostForm";
-import { UserCircle2, Mail, CalendarDays, PenLine } from "lucide-react";
+import {
+  UserCircle2,
+  Mail,
+  CalendarDays,
+  PenLine,
+  PencilLine,
+  Check,
+  X,
+} from "lucide-react";
 import AppNavbar from "../components/AppNavbar.tsx";
 
 interface ProfileUser {
@@ -30,6 +38,10 @@ const Profile: React.FC = () => {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [isEditingBio, setIsEditingBio] = useState(false);
+  const [bioDraft, setBioDraft] = useState("");
+  const [savingBio, setSavingBio] = useState(false);
+  const [bioMessage, setBioMessage] = useState("");
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -64,6 +76,7 @@ const Profile: React.FC = () => {
         }
 
         setUser(currentUser);
+        setBioDraft(currentUser.bio ?? "");
         setPosts(userPosts);
         setError("");
       } catch (profileError) {
@@ -89,6 +102,47 @@ const Profile: React.FC = () => {
       setPosts(postsResponse.data as Post[]);
     } catch (postsError) {
       console.error("Error refreshing user posts:", postsError);
+    }
+  };
+
+  const handleBioSave = async () => {
+    const token = localStorage.getItem("access_token");
+
+    if (!token) {
+      navigate("/login");
+      return;
+    }
+
+    setSavingBio(true);
+    setBioMessage("");
+
+    try {
+      const response = await axios.put(
+        "http://localhost:8000/auth/bio",
+        {
+          bio: bioDraft,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+
+      if (response.data.success) {
+        const updatedUser = response.data.user as ProfileUser;
+        setUser(updatedUser);
+        setBioDraft(updatedUser.bio ?? "");
+        setIsEditingBio(false);
+        setBioMessage("Bio updated successfully.");
+      } else {
+        setBioMessage(response.data.message || "Failed to update bio.");
+      }
+    } catch (bioError) {
+      console.error("Error updating bio:", bioError);
+      setBioMessage("Failed to update bio.");
+    } finally {
+      setSavingBio(false);
     }
   };
 
@@ -173,13 +227,74 @@ const Profile: React.FC = () => {
                     </p>
                   </div>
                   <div className="rounded-2xl border border-white/8 bg-white/5 p-4 sm:col-span-2">
-                    <div className="mb-2 flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-gray-400">
-                      <PenLine className="h-4 w-4 text-brand-300" />
-                      Bio
+                    <div className="mb-3 flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-gray-400">
+                        <PenLine className="h-4 w-4 text-brand-300" />
+                        Bio
+                      </div>
+                      {!isEditingBio ? (
+                        <button
+                          type="button"
+                          onClick={() => setIsEditingBio(true)}
+                          className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-gray-200 transition hover:border-brand-400/40 hover:bg-brand-500/10 hover:text-white"
+                        >
+                          <PencilLine className="h-3.5 w-3.5" />
+                          Edit bio
+                        </button>
+                      ) : null}
                     </div>
-                    <p className="text-sm leading-6 text-gray-300">
-                      {user.bio?.trim() ? user.bio : "No bio added yet."}
-                    </p>
+
+                    {isEditingBio ? (
+                      <div className="space-y-3">
+                        <textarea
+                          value={bioDraft}
+                          onChange={(e) => setBioDraft(e.target.value)}
+                          rows={4}
+                          maxLength={280}
+                          placeholder="Write a short bio about yourself..."
+                          className="w-full resize-none rounded-xl border border-dark-600 bg-dark-900 px-4 py-3 text-sm leading-6 text-white placeholder:text-gray-600 transition-colors focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                        />
+
+                        <div className="flex flex-wrap items-center gap-3">
+                          <button
+                            type="button"
+                            onClick={handleBioSave}
+                            disabled={savingBio}
+                            className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium text-white transition ${savingBio ? "cursor-not-allowed bg-dark-600 text-gray-400" : "bg-brand-500 hover:bg-brand-600"}`}
+                          >
+                            <Check className="h-4 w-4" />
+                            {savingBio ? "Saving..." : "Save bio"}
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsEditingBio(false);
+                              setBioDraft(user.bio ?? "");
+                              setBioMessage("");
+                            }}
+                            className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-gray-200 transition hover:border-red-400/40 hover:bg-red-500/10 hover:text-white"
+                          >
+                            <X className="h-4 w-4" />
+                            Cancel
+                          </button>
+                        </div>
+
+                        <p className="text-xs text-gray-500">
+                          {bioDraft.length}/280
+                        </p>
+                      </div>
+                    ) : (
+                      <p className="text-sm leading-6 text-gray-300">
+                        {user.bio?.trim() ? user.bio : "No bio added yet."}
+                      </p>
+                    )}
+
+                    {bioMessage ? (
+                      <p className="mt-3 text-sm text-brand-200">
+                        {bioMessage}
+                      </p>
+                    ) : null}
                   </div>
                 </div>
               </motion.div>
