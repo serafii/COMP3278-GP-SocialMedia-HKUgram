@@ -18,6 +18,8 @@ const App: React.FC = () => {
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="/login" element={<Home />} />
         <Route path="/signup" element={<Home />} />
+        <Route path="/forgot-password" element={<Home />} />
+        <Route path="/reset-password" element={<Home />} />
 
         {/* Protected Routes */}
         <Route element={<ProtectedRoutes />}>

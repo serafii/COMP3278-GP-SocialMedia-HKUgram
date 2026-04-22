@@ -120,12 +120,12 @@ const Login: React.FC = () => {
                 <label className="text-sm font-medium text-gray-300">
                   Password
                 </label>
-                <button
-                  type="button"
+                <Link
+                  to="/forgot-password"
                   className="text-xs hover:cursor-pointer text-brand-400 hover:text-brand-300 transition-colors"
                 >
                   Forgot password?
-                </button>
+                </Link>
               </div>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
