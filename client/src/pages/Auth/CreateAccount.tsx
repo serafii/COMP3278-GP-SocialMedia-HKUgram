@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { Mail, Lock, ArrowRight, User } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import axios from "axios";
 
 type FormDataType = {
   username: string;
@@ -10,17 +11,47 @@ type FormDataType = {
 };
 
 const CreateAccount: React.FC = () => {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState<FormDataType>({
     username: "",
     email: "",
     password: "",
   });
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!formData.username || !formData.email || !formData.password) return;
 
-    //Handle form submission logic here
-    alert("Account creation logic not implemented yet");
+    setLoading(true);
+    try {
+      const response = await axios.post(
+        "http://localhost:8000/auth/register",
+        {
+          username: formData.username,
+          email: formData.email,
+          password: formData.password,
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        },
+      );
+
+      if (response.data.success) {
+        localStorage.setItem("access_token", response.data.access_token!);
+        alert("Account created successfully!");
+        navigate("/feed");
+      } else if (response.data.success === false) {
+        alert("Failed to create account: " + response.data.message);
+      } else {
+        alert("Failed to create account: " + response.data.message);
+      }
+    } catch (error) {
+      console.error("Error creating account:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -127,11 +158,16 @@ const CreateAccount: React.FC = () => {
         </div>
 
         <button
-          className={`w-full bg-brand-500 hover:bg-brand-600 text-white font-medium rounded-xl py-3 mt-6 transition-all shadow-[0_0_20px_rgba(217,70,239,0.2)] hover:shadow-[0_0_25px_rgba(217,70,239,0.4)] flex items-center justify-center gap-2 group ${!formData.username || !formData.email || !formData.password ? "opacity-50 hover:cursor-not-allowed" : "hover:cursor-pointer"}`}
-          disabled={!formData.username || !formData.email || !formData.password}
+          className={`w-full bg-brand-500 hover:bg-brand-600 text-white font-medium rounded-xl py-3 mt-6 transition-all shadow-[0_0_20px_rgba(217,70,239,0.2)] hover:shadow-[0_0_25px_rgba(217,70,239,0.4)] flex items-center justify-center gap-2 group ${!formData.username || !formData.email || !formData.password || loading ? "opacity-50 hover:cursor-not-allowed" : "hover:cursor-pointer"}`}
+          disabled={
+            !formData.username ||
+            !formData.email ||
+            !formData.password ||
+            loading
+          }
           type="submit"
         >
-          Create Account
+          {loading ? "Creating Account..." : "Create Account"}
           <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
         </button>
       </form>

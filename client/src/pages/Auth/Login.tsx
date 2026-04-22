@@ -1,20 +1,41 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Mail, Lock, ArrowRight } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import axios from "axios";
 
 const Login: React.FC = () => {
   const [emailOrUsername, setEmailOrUsername] = useState<string>("");
   const [password, setPassword] = useState<string>("");
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
   const handleSubmit = async () => {
     if (!emailOrUsername || !password) {
       alert("Please fill in all fields.");
       return;
     }
+    setLoading(true);
 
-    // Implement login logic here
-    alert("Login functionality is not implemented yet.");
+    try {
+      const response = await axios.post("http://localhost:8000/auth/login", {
+        email: emailOrUsername,
+        password: password,
+      });
+
+      if (response.data.success) {
+        localStorage.setItem("access_token", response.data.access_token!);
+        alert("Login successful!");
+        navigate("/feed");
+      } else {
+        alert("Login failed: " + response.data.message);
+      }
+    } catch (error) {
+      console.error("Error logging in:", error);
+      alert("An error occurred while trying to log in.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -122,11 +143,11 @@ const Login: React.FC = () => {
             </div>
 
             <button
-              className={`w-full bg-brand-500 hover:bg-brand-600 text-white font-medium rounded-xl py-3 mt-6 transition-all shadow-[0_0_20px_rgba(217,70,239,0.2)] hover:shadow-[0_0_25px_rgba(217,70,239,0.4)] flex items-center justify-center gap-2 group ${!emailOrUsername || !password ? "opacity-50 cursor-not-allowed" : "hover:cursor-pointer"}`}
+              className={`w-full bg-brand-500 hover:bg-brand-600 text-white font-medium rounded-xl py-3 mt-6 transition-all shadow-[0_0_20px_rgba(217,70,239,0.2)] hover:shadow-[0_0_25px_rgba(217,70,239,0.4)] flex items-center justify-center gap-2 group ${!emailOrUsername || !password ? "opacity-50 cursor-not-allowed" : "hover:cursor-pointer"} ${loading ? "opacity-50 cursor-not-allowed" : ""}`}
               type="submit"
-              disabled={!emailOrUsername || !password}
+              disabled={!emailOrUsername || !password || loading}
             >
-              Sign In
+              {loading ? "Logging in..." : "Log In"}
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </button>
           </form>
