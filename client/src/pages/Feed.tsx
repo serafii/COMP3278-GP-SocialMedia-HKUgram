@@ -1,8 +1,17 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Heart, Image as ImageIcon } from "lucide-react";
+import { Heart, Image as ImageIcon, MessageCircle, Send } from "lucide-react";
 import AppNavbar from "../components/AppNavbar.tsx";
 import axios from "axios";
+
+interface Comment {
+  comment_id: number;
+  post_id: number;
+  user_id: number;
+  username: string;
+  content: string;
+  comment_date: string;
+}
 
 interface Post {
   post_id: number;
@@ -12,6 +21,7 @@ interface Post {
   image_url: string | null;
   like_count: number;
   liked: boolean;
+  comments: Comment[];
   post_date: string;
 }
 
@@ -21,6 +31,12 @@ const Feed: React.FC = () => {
   const [error, setError] = useState("");
   const [visibleCount, setVisibleCount] = useState(6);
   const [likingPosts, setLikingPosts] = useState<Record<number, boolean>>({});
+  const [commentDrafts, setCommentDrafts] = useState<Record<number, string>>(
+    {},
+  );
+  const [commentingPosts, setCommentingPosts] = useState<
+    Record<number, boolean>
+  >({});
 
   const fetchPosts = async () => {
     try {
@@ -125,6 +141,62 @@ const Feed: React.FC = () => {
       );
     } finally {
       setLikingPosts((current) => {
+        const nextState = { ...current };
+        delete nextState[postId];
+        return nextState;
+      });
+    }
+  };
+
+  const handleAddComment = async (postId: number) => {
+    if (commentingPosts[postId]) {
+      return;
+    }
+
+    const draft = commentDrafts[postId]?.trim() ?? "";
+    if (!draft) {
+      return;
+    }
+
+    const token = localStorage.getItem("access_token");
+    if (!token) {
+      alert("Please log in again to comment.");
+      return;
+    }
+
+    setCommentingPosts((current) => ({ ...current, [postId]: true }));
+
+    try {
+      const response = await axios.post(
+        `http://localhost:8000/posts/comments/${postId}`,
+        { content: draft },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+
+      if (response.data.success && response.data.comment) {
+        setPosts((currentPosts) =>
+          currentPosts.map((post) =>
+            post.post_id === postId
+              ? {
+                  ...post,
+                  comments: [...post.comments, response.data.comment],
+                }
+              : post,
+          ),
+        );
+        setCommentDrafts((current) => ({ ...current, [postId]: "" }));
+      } else {
+        alert(response.data.message || "Failed to add comment.");
+      }
+    } catch (commentError) {
+      console.error("Error adding comment:", commentError);
+      alert("Failed to add comment.");
+    } finally {
+      setCommentingPosts((current) => {
         const nextState = { ...current };
         delete nextState[postId];
         return nextState;
@@ -259,6 +331,76 @@ const Feed: React.FC = () => {
                           ? "Liked"
                           : "Like"}
                     </button>
+
+                    <span className="inline-flex items-center gap-2 text-xs text-gray-500">
+                      <MessageCircle className="h-4 w-4" />
+                      {post.comments.length} comments
+                    </span>
+                  </div>
+
+                  <div className="mt-5 space-y-4">
+                    {post.comments.length > 0 ? (
+                      <div className="space-y-3 rounded-2xl border border-white/8 bg-white/5 p-4">
+                        <div className="flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-gray-400">
+                          <MessageCircle className="h-4 w-4 text-brand-300" />
+                          Comments
+                        </div>
+                        <div className="space-y-3">
+                          {post.comments.map((comment) => (
+                            <div
+                              key={comment.comment_id}
+                              className="rounded-xl border border-white/5 bg-dark-900/80 p-3"
+                            >
+                              <div className="mb-1 flex items-center justify-between gap-2">
+                                <p className="text-sm font-semibold text-white">
+                                  {comment.username}
+                                </p>
+                                <p className="text-[11px] text-gray-500">
+                                  {formatDate(comment.comment_date)}
+                                </p>
+                              </div>
+                              <p className="text-sm leading-6 text-gray-200">
+                                {comment.content}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="rounded-2xl border border-dashed border-white/8 bg-white/5 px-4 py-3 text-sm text-gray-500">
+                        No comments yet. Be the first to add one.
+                      </div>
+                    )}
+
+                    <div className="flex flex-col gap-3 sm:flex-row">
+                      <input
+                        type="text"
+                        value={commentDrafts[post.post_id] ?? ""}
+                        onChange={(e) =>
+                          setCommentDrafts((current) => ({
+                            ...current,
+                            [post.post_id]: e.target.value,
+                          }))
+                        }
+                        placeholder="Write a comment..."
+                        className="w-full rounded-xl border border-dark-600 bg-dark-900 px-4 py-3 text-sm text-white placeholder:text-gray-600 transition-colors focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleAddComment(post.post_id)}
+                        disabled={Boolean(commentingPosts[post.post_id])}
+                        className={`inline-flex hover:cursor-pointer items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold text-white transition ${
+                          commentingPosts[post.post_id]
+                            ? "cursor-not-allowed bg-dark-600 text-gray-400"
+                            : "bg-brand-500 hover:bg-brand-600"
+                        }`}
+                      >
+                        <Send className="h-4 w-4" />
+                        {commentingPosts[post.post_id]
+                          ? "Posting..."
+                          : "Comment"}
+                      </button>
+                    </div>
                   </div>
                 </article>
               ))}
