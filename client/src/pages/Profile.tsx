@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { motion } from "framer-motion";
+import CreatePostForm from "../components/CreatePostForm";
 import {
   Home,
   LogOut,
@@ -81,6 +82,21 @@ const Profile: React.FC = () => {
 
     loadProfile();
   }, [navigate]);
+
+  const refreshPosts = async () => {
+    if (!user) {
+      return;
+    }
+
+    try {
+      const postsResponse = await axios.get(
+        `http://localhost:8000/posts/user/${user.user_id}`,
+      );
+      setPosts(postsResponse.data as Post[]);
+    } catch (postsError) {
+      console.error("Error refreshing user posts:", postsError);
+    }
+  };
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -235,6 +251,10 @@ const Profile: React.FC = () => {
                   </div>
                 </div>
               </motion.div>
+            </section>
+
+            <section className="rounded-3xl border border-white/8 bg-dark-800/90 p-6 shadow-2xl shadow-black/20">
+              <CreatePostForm onPostCreated={refreshPosts} />
             </section>
 
             <section className="rounded-3xl border border-white/8 bg-dark-800/90 p-6 shadow-2xl shadow-black/20">

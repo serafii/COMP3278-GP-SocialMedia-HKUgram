@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import CreatePostForm from "../components/CreatePostForm";
 
 interface Post {
   post_id: number;
@@ -40,17 +39,12 @@ const Feed: React.FC = () => {
     fetchPosts();
   }, []);
 
-  // Fix 1: Define handlePostCreated
-  const handlePostCreated = () => {
-    fetchPosts();
-  };
-
   // Fix 2: Define formatDate
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString(undefined, {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
+      year: "numeric",
+      month: "short",
+      day: "numeric",
     });
   };
 
@@ -62,8 +56,6 @@ const Feed: React.FC = () => {
       </header>
 
       <main>
-        <CreatePostForm onPostCreated={handlePostCreated} />
-
         <div className="mt-5">
           <h3 className="mb-4 text-lg font-semibold text-zinc-800">
             Recent Posts
