@@ -211,7 +211,10 @@ const Profile: React.FC = () => {
               </motion.div>
             </section>
 
-            <section className="rounded-3xl border border-white/8 bg-dark-800/90 p-6 shadow-2xl shadow-black/20">
+            <section
+              id="create-post"
+              className="rounded-3xl border border-white/8 bg-dark-800/90 p-6 shadow-2xl shadow-black/20 scroll-mt-6"
+            >
               <CreatePostForm onPostCreated={refreshPosts} />
             </section>
 

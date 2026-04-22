@@ -40,7 +40,6 @@ const CreateAccount: React.FC = () => {
 
       if (response.data.success) {
         localStorage.setItem("access_token", response.data.access_token!);
-        alert("Account created successfully!");
         navigate("/profile");
       } else if (response.data.success === false) {
         alert("Failed to create account: " + response.data.message);
