@@ -7,7 +7,7 @@ Social Media Application - HKgram
 | Name             | Student ID | GitHub Profile |
 | ---------------- | ---------- | -------------- |
 | Fatima-Tul-Zahra | 3036217037 | https-fatima   |
-| Dengshuyu        | X          | X              |
+| Dengshuyu        | 3033104198 | drunkat        |
 | Tang Yiping      | 3036253873 | tangyiping2005 |
 | Yu Tin Yau       | 3036067353 | lolimast3r     |
 | Sami Erafii      | 3036677926 | serafii        |
